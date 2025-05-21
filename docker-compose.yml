@@ -1,0 +1,70 @@
+version: '3'
+
+services:
+  frontend:
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+    container_name: nextjs-frontend
+    ports:
+      - "3000:3000"
+    restart: always
+    networks:
+      - app-network
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./back-end
+      dockerfile: Dockerfile
+    container_name: springboot-backend
+    ports:
+      - "8080:8080"
+    restart: always
+    networks:
+      - app-network
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      # JWT 비밀키 추가
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      # MySQL 연결 정보 추가
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/chill?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=${DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      # 메일 연결 정보 추가
+      - MAIL_NAME=${MAIL_NAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+    depends_on:
+      - mysql
+
+  # MySQL 서비스 추가
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: always
+    networks:
+      - app-network
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=chill
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+      - ./mysql/conf:/etc/mysql/conf.d
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+networks:
+  app-network:
+    driver: bridge
+
+# 볼륨 추가 (데이터 영속성 유지)
+volumes:
+  mysql-data:

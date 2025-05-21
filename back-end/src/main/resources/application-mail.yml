@@ -1,0 +1,4 @@
+mail:
+  gmail:
+    username: ${MAIL_NAME}
+    password: ${MAIL_PASSWORD}
